@@ -1,20 +1,24 @@
-import Image from "next/image";
 import { ProductList } from "@/data/data";
+import Image from "next/image";
 
-const Product: React.FC = () => {
+const RecentProduct: React.FC = () => {
   return (
     <>
-      <div className="flex flex-col gap-3 p-5 mt-5 mb-16">
-        <h1 className="text-xl font-semibold font-bricolage">Product List</h1>
-        <hr />
+      <div className="bg-slate-200 rounded-xl p-5 flex flex-col gap-3">
+        <h2 className="capitalize text-lg font-bricolage font-semibold">
+          recent product
+        </h2>
+        <hr className="border-dspDarkGray" />
         <div className="flex flex-col gap-3 items-start">
-          {ProductList.map((product,index) => {
+          {ProductList.map((product) => {
             return (
               <div
-                className="flex items-center justify-between gap-3"
+                className={`items-center justify-between gap-3 ${
+                  product.id > 3 ? "hidden" : "flex"
+                }`}
                 key={product.id}
               >
-                <p>{index+1}</p>
+                <p></p>
                 <Image
                   src={`/assets/${product.image}`}
                   alt={product.name}
@@ -25,7 +29,7 @@ const Product: React.FC = () => {
                 <h3>{product.name}</h3>
                 <p>{product.category}</p>
                 <p>Rp{product.price}</p>
-                <hr className="" />
+                <hr />
               </div>
             );
           })}
@@ -35,4 +39,4 @@ const Product: React.FC = () => {
   );
 };
 
-export default Product;
+export default RecentProduct;

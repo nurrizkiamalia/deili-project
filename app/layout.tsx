@@ -25,8 +25,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${montserrat.variable} ${bricolage.variable} font-montserrat`}>
+    <html lang="en" className="m-0">
+      <body className={`${montserrat.variable} ${bricolage.variable} font-montserrat flex flex-col justify-center items-center`}>
         {children}
       </body>
     </html>

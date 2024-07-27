@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 
 interface ButtonProps{
-    children?: React.ReactNode;
+    children?: JSX.Element | React.ReactNode;
     className?: string;
     links?: string;
 }
