@@ -1,36 +1,84 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+Introduction
 
-## Getting Started
+This website allows users to upload food images and get suggestions to change the background to something more appealing. Users can choose to use the suggested background or keep the original image. The final image can then be uploaded to the database and Cloudinary for storage.
+Features
 
-First, run the development server:
+    Category Selection: Choose a category for the food item.
+    Food Name Suggestions: Get suggestions for food names based on the selected category.
+    Image Upload: Upload a food image for processing.
+    Background Change Suggestion: Get suggestions for changing the background of the uploaded food image.
+    Optional Background Change: Users can choose to use the suggested background or keep the original image.
+    Image Storage: Store the final image in the database and Cloudinary.
 
-```bash
+Technologies Used
+
+    Frontend:
+        Next.js
+        React
+        Formik
+        Yup
+        Tailwind CSS
+
+    Backend:
+        Node.js
+        PostgreSql
+        Neon.Tech
+        Axios
+
+    Third-Party APIs:
+        Eden AI (for background removal)
+        Cloudinary (for image storage)
+
+Installation
+Prerequisites
+
+    Node.js (>= 14.x)
+    npm or yarn
+
+Steps
+
+    Clone the repository:
+
+bash
+
+git clone https://github.com/nurrizkiamalia/deili-project.git
+cd food-image-background-suggestion
+
+    Install the dependencies:
+
+bash
+
+npm install
+# or
+yarn install
+
+    Create a .env.local file in the root directory and add the necessary environment variables (see Environment Variables).
+
+    Run the development server:
+
+bash
+
 npm run dev
 # or
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Usage
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+    Open your browser and navigate to the vercel link.
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+    Select a category for the food item.
 
-## Learn More
+    Enter the name of the food item or get suggestions by clicking on "Get Suggestions."
 
-To learn more about Next.js, take a look at the following resources:
+    Upload a food image.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+    Get background change suggestions and choose whether to use the suggested background or keep the original.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+    Submit the form to store the final image in the database and Cloudinary.
 
-## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+    GET /api/categories: Fetches the list of categories.
+    GET /api/products: Fetches the list of products.
+    POST /api/products: Adds a new product to the database.
+    PUT /api/products/:id: Updates an existing product in the database.
+    DELETE /api/products/:id: Deletes a product from the database.
