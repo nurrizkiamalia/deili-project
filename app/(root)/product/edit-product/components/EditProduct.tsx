@@ -1,3 +1,5 @@
+"use client";
+
 import React from 'react';
 import FormProduct from '@/app/(root)/components/FormProduct';
 import { useProduct } from '@/hooks/useProduct';
@@ -7,14 +9,19 @@ const EditProduct: React.FC<{ product: Product }> = ({ product }) => {
   const { updateProduct } = useProduct();
 
   const initialValues = {
-    category: product.category_id,
-    foodName: product.food_name,
-    image: null,
+    category_id: product.category_id,
+    food_name: product.food_name,     
+    image_url: product.image_url,      
     price: product.price,
   };
 
   const handleSubmit = async (values: any) => {
-    await updateProduct(product.id, values);
+    const updatedValues = {
+      ...values,
+      category_id: values.category_id || product.category_id,
+      food_name: values.food_name || product.food_name,
+    };
+    await updateProduct(product.id, updatedValues, values.image || null);
   };
 
   return (

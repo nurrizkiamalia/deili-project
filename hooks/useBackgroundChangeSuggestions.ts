@@ -1,91 +1,86 @@
-"use client";
-import { useState } from 'react';
-import axios from 'axios';
+// hooks/useBackgroundChangeSuggestions.ts
+
+import { useState } from "react";
+import axios from "axios";
+import { uploadImageToCloudinary } from "@/utils/uploadImageToCloudinary";
 
 export const useBackgroundChangeSuggestions = () => {
   const [suggestedImages, setSuggestedImages] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [isolatedForeground, setIsolatedForeground] = useState<string | null>(null);
   const [originalImage, setOriginalImage] = useState<string | null>(null);
 
-  const suggestBackgroundChange = async (image: File) => {
+  const removeBackground = async (image: File) => {
+    try {
+      const apiKey = process.env.NEXT_PUBLIC_EDENAI_API_KEY;
+      if (!apiKey) throw new Error("API key is not configured");
+
+      const imageUrl = await uploadImageToCloudinary(image);
+      const response = await axios.post(
+        "https://api.edenai.run/v2/image/background_removal",
+        { providers: "sentisight", file_url: imageUrl },
+        { headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" } }
+      );
+
+      const resultUrl = response.data.sentisight?.image_resource_url;
+      if (!resultUrl) throw new Error("Failed to retrieve isolated foreground image.");
+      
+      setIsolatedForeground(resultUrl);
+      setOriginalImage(imageUrl);
+      return resultUrl;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Background removal failed.";
+      setError(errorMessage);
+      throw err;
+    }
+  };
+
+  const generateBackground = async (prompt: string) => {
+    try {
+      const apiKey = process.env.NEXT_PUBLIC_EDENAI_API_KEY;
+      if (!apiKey) throw new Error("API key is not configured");
+
+      const response = await axios.post(
+        "https://api.edenai.run/v2/image/generation",
+        { providers: "replicate", text: prompt, resolution: "512x512" },
+        { headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" } }
+      );
+
+      const generatedImageUrl = response.data.replicate.items[0]?.image_resource_url;
+      if (!generatedImageUrl) throw new Error("No image URL in the response items");
+
+      setSuggestedImages([generatedImageUrl]);
+      return generatedImageUrl;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Background generation failed.";
+      setError(errorMessage);
+      throw err;
+    }
+  };
+
+  const suggestBackgroundChange = async (image: File, prompt: string) => {
     setLoading(true);
     setError(null);
+    setSuggestedImages([]);
 
     try {
-      // Store the original image
-      setOriginalImage(URL.createObjectURL(image));
-
-      // Remove background
-      const removeBackgroundFormData = new FormData();
-      removeBackgroundFormData.append('files', image);
-      const removeBgResponse = await axios.post(
-        'https://api.edenai.run/v2/image/background_removal',
-        removeBackgroundFormData,
-        {
-          headers: {
-            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_EDENAI_API_KEY}`,
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
-
-      const removedBgImageUrl = removeBgResponse.data.output?.image_url;
-
-      if (!removedBgImageUrl || !removedBgImageUrl.startsWith('http')) {
-        throw new Error('Invalid removed background image URL.');
-      }
-
-      // Generate appealing backgrounds
-      const backgroundPrompts = [
-        "Elegant restaurant table setting",
-        "Rustic wooden kitchen counter",
-        "Colorful abstract food-themed pattern",
-        "Soft focus natural outdoor scene"
-      ];
-
-      const backgroundPromises = backgroundPrompts.map(prompt => 
-        axios.post('https://api.edenai.run/v2/image/generation', 
-          { prompt, providers: "stabilityai" },
-          {
-            headers: {
-              'Authorization': `Bearer ${process.env.NEXT_PUBLIC_EDENAI_API_KEY}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        )
-      );
-
-      const backgroundResponses = await Promise.all(backgroundPromises);
-      const backgroundUrls = backgroundResponses.map(response => response.data.stabilityai.items[0].image_url);
-
-      // Combine removed background image with new backgrounds
-      const combinedImagePromises = backgroundUrls.map(bgUrl => 
-        axios.post('https://api.edenai.run/v2/image/image_to_image',
-          { 
-            image_url: removedBgImageUrl,
-            background_image_url: bgUrl,
-          },
-          {
-            headers: {
-              'Authorization': `Bearer ${process.env.NEXT_PUBLIC_EDENAI_API_KEY}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        )
-      );
-
-      const combinedImageResponses = await Promise.all(combinedImagePromises);
-      const suggestedImageUrls = combinedImageResponses.map(response => response.data.stabilityai.items[0].image_url);
-
-      setSuggestedImages(suggestedImageUrls);
-    } catch (err: any) {
-      console.error('Image processing error:', err);
-      setError('Failed to process image. Please try again.');
+      const foregroundUrl = await removeBackground(image);
+      const backgroundUrl = await generateBackground(prompt);
+      return { foregroundUrl, backgroundUrl };
+    } catch (err) {
+      console.error("Error during background processing:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  return { suggestedImages, originalImage, loading, error, suggestBackgroundChange };
+  return {
+    suggestedImages,
+    isolatedForeground,
+    originalImage,
+    loading,
+    error,
+    suggestBackgroundChange,
+  };
 };

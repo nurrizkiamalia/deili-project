@@ -1,38 +1,36 @@
 import { NextResponse } from 'next/server';
-import pool from '../../../lib/db';
+import pool from '@/lib/db';
 
 export async function GET() {
   try {
     const result = await pool.query('SELECT * FROM products');
-    return NextResponse.json(result.rows);
+    return NextResponse.json(result.rows); // Return all products as JSON
   } catch (err: any) {
-    console.error('Error fetching products:', err.message || err);
+    console.error('Error fetching products:', err.message);
     return NextResponse.json({ error: err.message || 'An error occurred' }, { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const data = await request.formData();
-    const category_id = data.get('category_id') as string;
-    const food_name = data.get('food_name') as string;
-    const image_url = data.get('image_url') as File;
+    const data = await request.json(); // Parse incoming JSON body
+    const { category_id, food_name, image_url } = data;
 
-    if (!category_id || !food_name || !image_url ) {
-      throw new Error('Missing required fields');
+    if (!category_id || !food_name || !image_url) {
+      return NextResponse.json(
+        { error: 'Missing required fields: category_id, food_name, image_url' },
+        { status: 400 }
+      );
     }
 
-    // Handle the image upload to Cloudinary (or any other service) here
-    // const imageUrl = await uploadImageToCloudinary(image_url);
-
     const result = await pool.query(
-      'INSERT INTO products (category_id, food_name, image_url) VALUES ($1, $2, $3, $4) RETURNING *',
+      'INSERT INTO products (category_id, food_name, image_url) VALUES ($1, $2, $3) RETURNING *',
       [category_id, food_name, image_url]
     );
 
-    return NextResponse.json(result.rows[0], { status: 201 });
+    return NextResponse.json(result.rows[0], { status: 201 }); // Return newly created product
   } catch (err: any) {
-    console.error('Error creating product:', err.message || err);
+    console.error('Error creating product:', err.message);
     return NextResponse.json({ error: err.message || 'An error occurred' }, { status: 500 });
   }
 }

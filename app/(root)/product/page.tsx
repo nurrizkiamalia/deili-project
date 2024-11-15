@@ -24,7 +24,6 @@ const ProductList: React.FC = () => {
                 className="rounded-xl"
               />
               <h3>{product.food_name}</h3>
-              <p>{product.category_id}</p>
               <p>Rp{product.price}</p>
               <hr className="" />
             </div>

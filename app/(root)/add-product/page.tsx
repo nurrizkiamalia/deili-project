@@ -17,9 +17,15 @@ const AddProduct: React.FC = () => {
   };
 
   const handleSubmit = async (values: any) => {
-    await addProduct(values);
-    router.push('/products')
+    const { image_url, ...productData } = values; 
+    try {
+      await addProduct(productData, image_url); 
+      router.push('/product');
+    } catch (error) {
+      console.error("Error adding product:", error);
+    }
   };
+  
 
   return (
     <div>

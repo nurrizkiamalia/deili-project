@@ -28,7 +28,7 @@ export const useFoodNameSuggestions = (category: string) => {
           'https://api.edenai.run/v2/text/generation',
           {
             providers: ["openai"],
-            text: `You are a culinary expert. Suggest 5 traditional and popular food names specifically for the "${category}" category. Ensure that each suggestion includes the word "${category}" in the name and is a well-known dish closely related to "${category}".`,
+            text: `You are a culinary expert. Suggest 5 traditional and popular food names specifically for the "${category}" category. Ensure that each suggestion includes the word "${category}" in the name and is a well-known dish closely related to "${category}". please only generate name without any explanation.`,
             model: "gpt-3.5-turbo",
             max_tokens: 150,
             temperature: 0.7,
