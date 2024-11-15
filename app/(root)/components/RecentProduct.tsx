@@ -62,7 +62,7 @@ const RecentProduct: React.FC = () => {
                     <DropdownMenuItem>See Product</DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem>
-                      <button onClick={() => router.push(`/edit-product`)}>Update Product</button>
+                      <button onClick={() => router.push(`/`)}>Update Product</button>
                     </DropdownMenuItem>
                     <DropdownMenuItem>
                       <button onClick={() => handleDelete(product.id)}>Delete Product</button>
