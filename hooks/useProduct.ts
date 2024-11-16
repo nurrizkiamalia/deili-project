@@ -40,22 +40,34 @@ export const useProduct = () => {
   };
 
   // Update an existing product
-  const updateProduct = async (id: number, product: Omit<Product, "id">, image?: File) => {
+  const updateProduct = async (id: number, product: Partial<Product>, image?: File) => {
     setLoading(true);
     setError(null);
     try {
       let imageUrl = product.image_url;
+  
+      // Upload image if provided
       if (image) {
         imageUrl = await uploadImageToCloudinary(image);
+        product.image_url = imageUrl; // Add to the product data
       }
-      const response = await axios.put(`/api/products/${id}`, { ...product, image_url: imageUrl });
+  
+      // Send only updated fields
+      const filteredProduct = Object.fromEntries(
+        Object.entries(product).filter(([_, value]) => value !== undefined && value !== null)
+      );
+  
+      const response = await axios.put(`/api/products/${id}`, filteredProduct);
       setProducts(products.map((p) => (p.id === id ? response.data : p)));
+      alert("Product updated successfully!");
     } catch (err: any) {
+      console.error("Error updating product:", err);
+      alert("Failed to update product.");
       setError("Failed to update product");
     } finally {
       setLoading(false);
     }
-  };
+  };  
 
   // Delete a product
   const deleteProduct = async (id: number) => {

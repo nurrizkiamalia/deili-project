@@ -1,39 +1,90 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
-import * as Yup from "yup";
 import { useCategory } from "@/hooks/useCategory";
 import { useBackgroundChangeSuggestions } from "@/hooks/useBackgroundChangeSuggestions";
 import { Category } from "@/types/datatypes";
 import { useFoodNameSuggestions } from "@/hooks/useFoodNameSuggestions";
+import { getRemainingUses, isUsageAllowed, getUsageKey, getCooldownTime } from "@/utils/aiUsageManager";
 
 interface FormProductProps {
   initialValues: any;
   onSubmit: (values: any) => Promise<void>;
+  validationSchema: any;
 }
 
-const FormProduct: React.FC<FormProductProps> = ({ initialValues, onSubmit }) => {
+const FormProduct: React.FC<FormProductProps> = ({ initialValues, onSubmit, validationSchema }) => {
   const { categories, loading: loadingCategories, error: errorCategories } = useCategory();
-  const [selectedCategory, setSelectedCategory] = useState<string>(initialValues.category || ""); // For food name suggestions
-  const { suggestions, loading: loadingSuggestions, error: errorSuggestions } = useFoodNameSuggestions(selectedCategory);
   const { loading: loadingBackground, error: errorBackground, suggestBackgroundChange } = useBackgroundChangeSuggestions();
 
   const [backgroundCommand, setBackgroundCommand] = useState<string>("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [compositedImage, setCompositedImage] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>(initialValues.category_id || "");
+  const [selectedCategoryName, setSelectedCategoryName] = useState<string>(
+    categories.find((cat) => cat.id.toString() === initialValues.category_id)?.name || ""
+  );
+
+  const { suggestions, loading: loadingSuggestions, error: errorSuggestions, fetchSuggestions } = useFoodNameSuggestions();
+
+  const [remainingTextGen, setRemainingTextGen] = useState<number>(0);
+  const [remainingBgRemoval, setRemainingBgRemoval] = useState<number>(0);
+  const [remainingImageGen, setRemainingImageGen] = useState<number>(0);
+
+  const [cooldownTextGen, setCooldownTextGen] = useState<number | null>(null);
+  const [cooldownBgRemoval, setCooldownBgRemoval] = useState<number | null>(null);
+  const [cooldownImageGen, setCooldownImageGen] = useState<number | null>(null);
+
+  useEffect(() => {
+    setRemainingTextGen(getRemainingUses("text_gen"));
+    setRemainingBgRemoval(getRemainingUses("bg_removal"));
+    setRemainingImageGen(getRemainingUses("image_gen"));
+
+    setCooldownTextGen(getCooldownTime("text_gen"));
+    setCooldownBgRemoval(getCooldownTime("bg_removal"));
+    setCooldownImageGen(getCooldownTime("image_gen"));
+  }, []);
+
+  const updateRemainingUses = () => {
+    setRemainingTextGen(getRemainingUses("text_gen"));
+    setRemainingBgRemoval(getRemainingUses("bg_removal"));
+    setRemainingImageGen(getRemainingUses("image_gen"));
+
+    setCooldownTextGen(getCooldownTime("text_gen"));
+    setCooldownBgRemoval(getCooldownTime("bg_removal"));
+    setCooldownImageGen(getCooldownTime("image_gen"));
+  };
 
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>, setFieldValue: (field: string, value: any) => void) => {
-    const selectedName = e.target.value;
-    setSelectedCategory(selectedName);
+    const selectedCategoryId = e.target.value;
+    setSelectedCategoryId(selectedCategoryId);
 
-    const category = categories.find((cat) => cat.name === selectedName);
-    const categoryId = category ? category.id : "";
-    setFieldValue("category_id", categoryId); // Set category_id as the ID
+    const selectedCategory = categories.find((cat) => cat.id.toString() === selectedCategoryId);
+    if (selectedCategory) {
+      setSelectedCategoryName(selectedCategory.name);
+      setFieldValue("category_id", selectedCategoryId);
+    }
+  };
+
+  const handleGenerateSuggestions = async () => {
+    if (!isUsageAllowed("text_gen")) {
+      const minutesRemaining = Math.ceil((cooldownTextGen || 0) / 60000);
+      alert(`Text generation limit reached. Try again in ${minutesRemaining} minutes.`);
+      return;
+    }
+    await fetchSuggestions(selectedCategoryName);
+    updateRemainingUses();
   };
 
   const handleBackgroundChange = async () => {
+    if (!isUsageAllowed("bg_removal")) {
+      const minutesRemaining = Math.ceil((cooldownBgRemoval || 0) / 60000);
+      alert(`Background removal limit reached. Try again in ${minutesRemaining} minutes.`);
+      return;
+    }
+
     if (!imageFile || !backgroundCommand.trim()) {
       console.error("Image file and prompt are required.");
       return;
@@ -41,8 +92,9 @@ const FormProduct: React.FC<FormProductProps> = ({ initialValues, onSubmit }) =>
 
     try {
       const { foregroundUrl, backgroundUrl } = (await suggestBackgroundChange(imageFile, backgroundCommand)) || {};
-      if (!foregroundUrl || !backgroundUrl) {
-        console.error("Failed to retrieve either the foreground or background URL.");
+      if (!foregroundUrl && !backgroundUrl) {
+        console.warn("No background change applied. Using the original image.");
+        setCompositedImage(URL.createObjectURL(imageFile));
         return;
       }
 
@@ -55,8 +107,8 @@ const FormProduct: React.FC<FormProductProps> = ({ initialValues, onSubmit }) =>
         foreground.crossOrigin = "anonymous";
         background.crossOrigin = "anonymous";
 
-        background.src = backgroundUrl;
-        foreground.src = foregroundUrl;
+        background.src = backgroundUrl || "";
+        foreground.src = foregroundUrl || URL.createObjectURL(imageFile);
 
         background.onload = () => {
           canvas.width = background.width;
@@ -77,12 +129,15 @@ const FormProduct: React.FC<FormProductProps> = ({ initialValues, onSubmit }) =>
     } catch (err) {
       console.error("Error generating composite image:", err);
     }
+    updateRemainingUses();
   };
 
   const handleSaveProduct = async (values: any) => {
+    const filteredValues = Object.fromEntries(Object.entries(values).filter(([_, value]) => value !== ""));
     if (compositedImage) {
-      await onSubmit({ ...values, image_url: compositedImage });
+      filteredValues.image_url = compositedImage;
     }
+    await onSubmit(filteredValues);
   };
 
   if (loadingCategories) return <div>Loading categories...</div>;
@@ -92,12 +147,7 @@ const FormProduct: React.FC<FormProductProps> = ({ initialValues, onSubmit }) =>
     <div className="max-w-md mx-auto mt-10">
       <Formik
         initialValues={initialValues}
-        validationSchema={Yup.object({
-          category_id: Yup.string().required("Category is required"),
-          food_name: Yup.string().required("Food name is required"),
-          price: Yup.string().required("Price is required"),
-          image_url: Yup.mixed().required("Image is required"),
-        })}
+        validationSchema={validationSchema}
         onSubmit={handleSaveProduct}
       >
         {({ setFieldValue }) => (
@@ -111,16 +161,32 @@ const FormProduct: React.FC<FormProductProps> = ({ initialValues, onSubmit }) =>
                 as="select"
                 name="category_id"
                 className="shadow border rounded w-full py-2 px-3 text-gray-700"
-                onChange={(e: any) => handleCategoryChange(e, setFieldValue)}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleCategoryChange(e, setFieldValue)}
+                value={selectedCategoryId}
               >
-                <option value="">Select a category</option>
+                <option value="" disabled>
+                  Select a category
+                </option>
                 {categories.map((category: Category) => (
-                  <option key={category.id} value={category.name}>
+                  <option key={category.id} value={category.id}>
                     {category.name}
                   </option>
                 ))}
               </Field>
               <ErrorMessage name="category_id" component="div" className="text-red-500 text-xs italic" />
+              <div className="my-1 text-xs">
+                <p className="">Text Generation {remainingTextGen} point remaining</p>
+                {remainingTextGen === 0 && cooldownTextGen && (
+                  <p>Next reset in: {Math.ceil(cooldownTextGen / 60000)} minutes</p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={handleGenerateSuggestions}
+                className="py-1 px-3 border-[1px] mt-2 border-dspGreen rounded-lg text-dspGreen font-bold text-xs hover:scale-105 hover:text-dspDarkGreen transition-all duration-300"
+              >
+                Generate Food Name Suggestions
+              </button>
             </div>
 
             {/* Food Name Suggestions */}
@@ -163,7 +229,7 @@ const FormProduct: React.FC<FormProductProps> = ({ initialValues, onSubmit }) =>
               <ErrorMessage name="price" component="div" className="text-red-500 text-xs italic" />
             </div>
 
-            {/* Image Upload and Background Command */}
+            {/* Image Upload */}
             <div className="mb-6">
               <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="image_url">
                 Image Upload
@@ -183,6 +249,7 @@ const FormProduct: React.FC<FormProductProps> = ({ initialValues, onSubmit }) =>
               <ErrorMessage name="image_url" component="div" className="text-red-500 text-xs italic" />
             </div>
 
+            {/* Background Command */}
             <div className="mb-6">
               <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="backgroundCommand">
                 Background Command
@@ -194,15 +261,24 @@ const FormProduct: React.FC<FormProductProps> = ({ initialValues, onSubmit }) =>
                 value={backgroundCommand}
                 onChange={(e) => setBackgroundCommand(e.target.value)}
               />
-              <p className="text-xs text-red-500">Provide a prompt for the background image</p>
+              <p className="text-xs text-red-500">Provide a <strong>spesific</strong> prompt for the background image</p>
+              <div className="mt-y text-xs">
+                <p className="">Background Removal {remainingBgRemoval} point remaining</p>
+                {remainingBgRemoval === 0 && cooldownBgRemoval && (
+                  <p>Next reset in: {Math.ceil(cooldownBgRemoval / 60000)} minutes</p>
+                )}
+                <p className="">Image Generation {remainingImageGen} point remaining</p>
+                {remainingImageGen === 0 && cooldownImageGen && (
+                  <p className="text-xl text-black">Next reset in: {Math.ceil(cooldownImageGen / 60000)} minutes</p>
+                )}
+              </div>
             </div>
 
             <div className="mb-6">
               <button
                 type="button"
                 onClick={handleBackgroundChange}
-                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                
+                className="border-[1px] border-dspGreen rounded-lg text-dspGreen font-bold py-1 px-3 hover:scale-105 hover:text-dspDarkGreen transition-all duration-300"
               >
                 {loadingBackground ? "Generating..." : "Generate Background"}
               </button>
@@ -218,7 +294,7 @@ const FormProduct: React.FC<FormProductProps> = ({ initialValues, onSubmit }) =>
             <div className="flex items-center justify-between">
               <button
                 type="submit"
-                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                className="bg-dspGreen hover:bg-dspDarkGreen text-white font-bold py-2 px-4 rounded"
               >
                 Submit
               </button>

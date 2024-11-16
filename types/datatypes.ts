@@ -15,4 +15,6 @@ export interface Product {
   food_name: string;
   price: number;
   image_url: string;
+  created_at: string;
+  updated_at: string;
 }

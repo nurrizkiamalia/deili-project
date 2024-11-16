@@ -14,18 +14,18 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const data = await request.json(); // Parse incoming JSON body
-    const { category_id, food_name, image_url } = data;
+    const { category_id, price, food_name, image_url } = data;
 
-    if (!category_id || !food_name || !image_url) {
+    if (!category_id || !price || !food_name || !image_url) {
       return NextResponse.json(
-        { error: 'Missing required fields: category_id, food_name, image_url' },
+        { error: 'Missing required fields: category_id, price, food_name, image_url' },
         { status: 400 }
       );
     }
 
     const result = await pool.query(
-      'INSERT INTO products (category_id, food_name, image_url) VALUES ($1, $2, $3) RETURNING *',
-      [category_id, food_name, image_url]
+      'INSERT INTO products (category_id, price, food_name, image_url) VALUES ($1, $2, $3, $4) RETURNING *',
+      [category_id, price, food_name, image_url]
     );
 
     return NextResponse.json(result.rows[0], { status: 201 }); // Return newly created product

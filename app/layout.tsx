@@ -26,7 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="m-0">
-      <body className={`${montserrat.variable} ${bricolage.variable} font-montserrat flex flex-col justify-center items-center`}>
+      <body className={`${montserrat.variable} ${bricolage.variable} font-montserrat flex flex-col justify-center items-center !pointer-events-auto`}>
         {children}
       </body>
     </html>
