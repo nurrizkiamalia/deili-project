@@ -1,12 +1,13 @@
-const MAX_USES = 3;
+const MAX_USES = 2;
 const COOLDOWN_HOURS = 1;
 
 export const getUsageKey = (key: string) => `ai_usage_${key}`;
 
-const isBrowser = typeof window !== "undefined";
+const isBrowser = typeof window !== "undefined"; 
 
 export const isUsageAllowed = (key: string) => {
-  if (!isBrowser) return true; // Allow usage on the server
+  if (!isBrowser) return true; 
+
   const usage = JSON.parse(localStorage.getItem(getUsageKey(key)) || "{}");
   const now = Date.now();
 
@@ -14,13 +15,20 @@ export const isUsageAllowed = (key: string) => {
     if (now - usage.timestamp < COOLDOWN_HOURS * 60 * 60 * 1000) {
       return false;
     }
-    localStorage.removeItem(getUsageKey(key));
+    localStorage.removeItem(getUsageKey(key)); 
   }
   return true;
 };
 
+export const getRemainingUses = (key: string) => {
+  if (!isBrowser) return MAX_USES; 
+  const usage = JSON.parse(localStorage.getItem(getUsageKey(key)) || "{}");
+  return Math.max(0, MAX_USES - (usage.count || 0));
+};
+
 export const recordUsage = (key: string) => {
   if (!isBrowser) return;
+
   const usage = JSON.parse(localStorage.getItem(getUsageKey(key)) || "{}");
   const now = Date.now();
 
@@ -29,15 +37,9 @@ export const recordUsage = (key: string) => {
   } else {
     localStorage.setItem(
       getUsageKey(key),
-      JSON.stringify({ count: (usage.count || 0) + 1, timestamp: usage.timestamp })
+      JSON.stringify({ count: Math.min(MAX_USES, (usage.count || 0) + 1), timestamp: usage.timestamp })
     );
   }
-};
-
-export const getRemainingUses = (key: string) => {
-  if (!isBrowser) return MAX_USES; // Default max on server
-  const usage = JSON.parse(localStorage.getItem(getUsageKey(key)) || "{}");
-  return MAX_USES - (usage.count || 0);
 };
 
 export const getCooldownTime = (key: string) => {

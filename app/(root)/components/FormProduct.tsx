@@ -17,6 +17,7 @@ interface FormProductProps {
 const FormProduct: React.FC<FormProductProps> = ({ initialValues, onSubmit, validationSchema }) => {
   const { categories, loading: loadingCategories, error: errorCategories } = useCategory();
   const { loading: loadingBackground, error: errorBackground, suggestBackgroundChange } = useBackgroundChangeSuggestions();
+  const { suggestions, loading: loadingSuggestions, error: errorSuggestions, fetchSuggestions } = useFoodNameSuggestions();
 
   const [backgroundCommand, setBackgroundCommand] = useState<string>("");
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -26,8 +27,6 @@ const FormProduct: React.FC<FormProductProps> = ({ initialValues, onSubmit, vali
   const [selectedCategoryName, setSelectedCategoryName] = useState<string>(
     categories.find((cat) => cat.id.toString() === initialValues.category_id)?.name || ""
   );
-
-  const { suggestions, loading: loadingSuggestions, error: errorSuggestions, fetchSuggestions } = useFoodNameSuggestions();
 
   const [remainingTextGen, setRemainingTextGen] = useState<number>(0);
   const [remainingBgRemoval, setRemainingBgRemoval] = useState<number>(0);
@@ -175,7 +174,7 @@ const FormProduct: React.FC<FormProductProps> = ({ initialValues, onSubmit, vali
               </Field>
               <ErrorMessage name="category_id" component="div" className="text-red-500 text-xs italic" />
               <div className="my-1 text-xs">
-                <p className="">Text Generation {remainingTextGen} point remaining</p>
+                <p>Text Generation {remainingTextGen} point remaining</p>
                 {remainingTextGen === 0 && cooldownTextGen && (
                   <p>Next reset in: {Math.ceil(cooldownTextGen / 60000)} minutes</p>
                 )}
@@ -261,13 +260,13 @@ const FormProduct: React.FC<FormProductProps> = ({ initialValues, onSubmit, vali
                 value={backgroundCommand}
                 onChange={(e) => setBackgroundCommand(e.target.value)}
               />
-              <p className="text-xs text-red-500">Provide a <strong>spesific</strong> prompt for the background image</p>
+              <p className="text-xs text-red-500">Provide a <strong>specific</strong> prompt for the background image</p>
               <div className="mt-y text-xs">
-                <p className="">Background Removal {remainingBgRemoval} point remaining</p>
+                <p>Background Removal {remainingBgRemoval} point remaining</p>
                 {remainingBgRemoval === 0 && cooldownBgRemoval && (
                   <p>Next reset in: {Math.ceil(cooldownBgRemoval / 60000)} minutes</p>
                 )}
-                <p className="">Image Generation {remainingImageGen} point remaining</p>
+                <p>Image Generation {remainingImageGen} point remaining</p>
                 {remainingImageGen === 0 && cooldownImageGen && (
                   <p className="text-xl text-black">Next reset in: {Math.ceil(cooldownImageGen / 60000)} minutes</p>
                 )}
