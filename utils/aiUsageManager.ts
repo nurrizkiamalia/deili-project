@@ -4,7 +4,7 @@ const COOLDOWN_HOURS = 1;
 export const getUsageKey = (key: string) => `ai_usage_${key}`;
 
 const isBrowser = typeof window !== "undefined"; 
-
+ 
 export const isUsageAllowed = (key: string) => {
   if (!isBrowser) return true; 
 
