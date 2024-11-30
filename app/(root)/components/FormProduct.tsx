@@ -36,61 +36,25 @@ const FormProduct: React.FC<FormProductProps> = ({ initialValues, onSubmit, vali
   const [cooldownBgRemoval, setCooldownBgRemoval] = useState<number | null>(null);
   const [cooldownImageGen, setCooldownImageGen] = useState<number | null>(null);
 
-  const [loadingRemainingTextGen, setLoadingRemainingTextGen] = useState(true);
-  const [loadingRemainingBgRemoval, setLoadingRemainingBgRemoval] = useState(true);
-  const [loadingRemainingImageGen, setLoadingRemainingImageGen] = useState(true);
-  
   useEffect(() => {
-    const fetchUsageData = async () => {
-      setLoadingRemainingTextGen(true);
-      setLoadingRemainingBgRemoval(true);
-      setLoadingRemainingImageGen(true);
-  
-      const remainingTextGen = await getRemainingUses("text_gen");
-      const remainingBgRemoval = await getRemainingUses("bg_removal");
-      const remainingImageGen = await getRemainingUses("image_gen");
-  
-      const cooldownTextGen = await getCooldownTime("text_gen");
-      const cooldownBgRemoval = await getCooldownTime("bg_removal");
-      const cooldownImageGen = await getCooldownTime("image_gen");
-  
-      setRemainingTextGen(remainingTextGen);
-      setRemainingBgRemoval(remainingBgRemoval);
-      setRemainingImageGen(remainingImageGen);
-  
-      setCooldownTextGen(cooldownTextGen);
-      setCooldownBgRemoval(cooldownBgRemoval);
-      setCooldownImageGen(cooldownImageGen);
-  
-      setLoadingRemainingTextGen(false);
-      setLoadingRemainingBgRemoval(false);
-      setLoadingRemainingImageGen(false);
-    };
-  
-    fetchUsageData();
-  }, []);  
+    setRemainingTextGen(getRemainingUses("text_gen"));
+    setRemainingBgRemoval(getRemainingUses("bg_removal"));
+    setRemainingImageGen(getRemainingUses("image_gen"));
 
-  const updateRemainingUses = async () => {
-    const remainingTextGen = await getRemainingUses("text_gen");
-    const remainingBgRemoval = await getRemainingUses("bg_removal");
-    const remainingImageGen = await getRemainingUses("image_gen");
-  
-    const cooldownTextGen = await getCooldownTime("text_gen");
-    const cooldownBgRemoval = await getCooldownTime("bg_removal");
-    const cooldownImageGen = await getCooldownTime("image_gen");
-  
-    setRemainingTextGen(remainingTextGen);
-    setRemainingBgRemoval(remainingBgRemoval);
-    setRemainingImageGen(remainingImageGen);
-  
-    setCooldownTextGen(cooldownTextGen);
-    setCooldownBgRemoval(cooldownBgRemoval);
-    setCooldownImageGen(cooldownImageGen);
+    setCooldownTextGen(getCooldownTime("text_gen"));
+    setCooldownBgRemoval(getCooldownTime("bg_removal"));
+    setCooldownImageGen(getCooldownTime("image_gen"));
+  }, []);
+
+  const updateRemainingUses = () => {
+    setRemainingTextGen(getRemainingUses("text_gen"));
+    setRemainingBgRemoval(getRemainingUses("bg_removal"));
+    setRemainingImageGen(getRemainingUses("image_gen"));
+
+    setCooldownTextGen(getCooldownTime("text_gen"));
+    setCooldownBgRemoval(getCooldownTime("bg_removal"));
+    setCooldownImageGen(getCooldownTime("image_gen"));
   };
-  
-  useEffect(() => {
-    updateRemainingUses();
-  }, []);  
 
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>, setFieldValue: (field: string, value: any) => void) => {
     const selectedCategoryId = e.target.value;
@@ -177,10 +141,6 @@ const FormProduct: React.FC<FormProductProps> = ({ initialValues, onSubmit, vali
 
   if (loadingCategories) return <div>Loading categories...</div>;
   if (errorCategories) return <div>{errorCategories}</div>;
-  if (loadingRemainingTextGen || loadingRemainingBgRemoval || loadingRemainingImageGen) {
-    return <div>Loading...</div>;
-  }
-  
 
   return (
     <div className="max-w-md mx-auto mt-10">
